@@ -37,8 +37,6 @@ class Camera(Primary3D):
     # Render the whole scene
     def renderObjects(self, objects = [], wireframe = False):
         if wireframe:
-            objects = self.sortObjByDist(objects) #Sort objects
-
             for object in objects:
                 if type(object).__bases__[0] == Primary3D:
                     object.Plot(self, True) # plot object on cameras grid
@@ -236,7 +234,7 @@ class Triangle3D(Primary3D):
 # Test code
 # ...
 
-g = Grid(9, 3, "#", ".")
+g = Grid(9, 9, "#", ".")
 camera = Camera(Transform3D(Vector3.zero(), RMatrix3.zero()), g, 90)
 
 a = Point3D(Transform3D(Vector3(0, 0, 10)))
@@ -244,5 +242,4 @@ a = Point3D(Transform3D(Vector3(0, 0, 10)))
 a.Plot(camera)
 camera.grid.FlipH()
 camera.grid.FlipV()
-
 print(camera.grid)

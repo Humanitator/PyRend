@@ -13,8 +13,9 @@ from VectorMath import Vector2, Vector3
 #A basic 3D transform with position and rotation
 class Transform2D:
     #Basic variables
-    localPosition = None
-    localRotation = None
+    localPosition = Vector2.zero()
+    localRotation = 0.0
+    localScale = Vector2.one()
 
     #Hierarchy variables
     primary = None
@@ -36,9 +37,9 @@ class Transform2D:
         if self.parent == None: # return start position
             return self.localPosition
         else: # Recurse
-            gPos += self.parent.globalPosition(MaxIterations, ignoreTimeout, gPos, iteration, start) + (self.parent.right() * self.localPosition.x +   # Add relative global x position
-                                                                                                        self.parent.up() * self.localPosition.y)       # Add relative global y position
-        return gPos    
+            gPos += self.parent.globalPosition(MaxIterations, ignoreTimeout, gPos, iteration, start) + (self.parent.right() * self.localPosition.x +                        # Add relative global x position
+                                                                                                        self.parent.up() * self.localPosition.y) * self.parent.localScale   # Add relative global y position
+        return gPos
 
     #The global rotation of the transform
     def globalRotation(self, MaxIterations = 5000, ignoreTimeout = False) -> float:        
@@ -164,10 +165,13 @@ class Transform2D:
         return f"({self.localPosition}; {self.forward()})"
 
     #---Initialization---
-    def __init__(self, position = Vector2.zero(), rotationDegrees = 0.0, primary = None, parent = None) -> None:
+    def __init__(self, position = Vector2.zero(), rotationDegrees = 0.0, localScale = Vector2.one(), primary = None, parent = None) -> None:
         #Basics
         self.localPosition = position
         self.localRotation = rotationDegrees
+        self.localScale = localScale
+
+        # Hierarchy
         self.parent = parent
         self.primary = primary
 
@@ -176,8 +180,9 @@ class Transform2D:
 #A basic 3D transform with position and rotation
 class Transform3D:
     #Basic variables
-    localPosition = None
-    localRotation = None
+    localPosition = Vector3.zero()
+    localRotation = RMatrix3.zero()
+    localScale = Vector3.one()
 
     #Hierarchy variables
     primary = None
@@ -199,9 +204,9 @@ class Transform3D:
         if type(self.parent) == type(None): # return start position if world is parent
             return self.localPosition
         else: # Recurse
-            gPos += self.parent.globalPosition(MaxIterations, ignoreTimeout, gPos, iteration, start) + (self.parent.right() * self.localPosition.x +   # Add relative global x position
-                                                                                                        self.parent.up() * self.localPosition.y +      # Add relative global y position
-                                                                                                        self.parent.forward() * self.localPosition.z)  # Add relative global z position
+            gPos += self.parent.globalPosition(MaxIterations, ignoreTimeout, gPos, iteration, start) + (self.parent.right() * self.localPosition.x +                            # Add relative global x position
+                                                                                                        self.parent.up() * self.localPosition.y +                               # Add relative global y position
+                                                                                                        self.parent.forward() * self.localPosition.z) * self.parent.localScale  # Add relative global z position
         return gPos
         
 
@@ -261,7 +266,7 @@ class Transform3D:
     # The right perpendicular unit vector
     def right(self, round_to = 10, roundVector = True) -> Vector3:
         if type(self.localRotation) == RMatrix3:
-            # The right perpendicular vector is just the up perpendicular vector rotated by 90 degrees un its Z axis
+            # The right perpendicular vector is just the up perpendicular vector rotated by 90 degrees on Z axis
             # Well this was easy...
             rightTransform = Transform3D(Vector3.zero(), RMatrix3(self.localRotation.x, self.localRotation.y, self.localRotation.z + 90))
             return rightTransform.up()
@@ -363,13 +368,16 @@ class Transform3D:
         return f"({self.localPosition}; {self.localRotation})"
 
     #---Initialization---
-    def __init__(self, position = Vector3.zero(), rotation = RMatrix3.front(), primary = None, parent = None, pos_is_global = False, rot_is_global = False) -> None:
-        #Basics
+    def __init__(self, position = Vector3.zero(), rotation = RMatrix3.front(), scale = Vector3.one(), primary = None, parent = None, pos_is_global = False, rot_is_global = False) -> None:
+        # Basics
         self.localPosition = position
         self.localRotation = rotation
+        self.localScale = scale
+
+        # Hierarchy
         self.primary = primary
 
-        #Set parent
+        # Set parent
         if type(parent) == Transform3D:
             self.parent = parent
         elif parent != None:
@@ -377,7 +385,7 @@ class Transform3D:
         else:
             self.parent = parent
 
-        #Set position and rotation
+        # Set position and rotation
         if pos_is_global and type(parent) != type(None):
             self.localPosition = parent.transform.globalPosition().vectorTo(position)
             print(parent.transform.globalPosition().vectorTo(position), "; ", position, "; ", parent.transform)
