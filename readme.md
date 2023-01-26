@@ -3,7 +3,7 @@
 
 This is a 3D renderer made in python, so don't expect high efficiency and other stuff like that
 The renderer is made for learning 3D rendering basics and for rendering basic stuff
-> Fun fact: I made this renderer beacause I needed a reason to learn python.  
+> Fun fact: I made this as a reason to learn python.  
 
 ## Classes:
 ## 3D

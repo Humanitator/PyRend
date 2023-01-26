@@ -25,7 +25,7 @@ class Primary2D:
     def __init__(self, transform: Transform2D, fill: str) -> None:
         self.fill = fill
         self.transform = transform
-
+        
 
 #Basically a 2D array used for screen
 class Grid:
@@ -79,10 +79,9 @@ class Grid:
                 text += " "
             text += "\n"
         return text
-
-
+    
     #Initialization
-    def __init__(self, xSize: int, ySize: int, fill, empty) -> None:
+    def __init__(self, xSize: int, ySize: int, fill = "#", empty = " ") -> None:
         self.xSize = max(xSize, 1)
         self.ySize = max(ySize, 1)
 

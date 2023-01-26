@@ -5,8 +5,121 @@ import math
 from MainClasses import *
 from Object2DClasses import *
 from Transforms import *
-from VectorMath import Vector2, Vector3
+from VectorMath import *
 from RotationMatrix import *
+
+# A class to hold a list of primaries
+class Mesh:
+    # Basics
+    transform = None
+    fill = None
+    
+    # Ponts, lines and tris
+    points = []
+    lines = []
+    tris = []
+    
+    #---Presets---
+    def cube():
+        p1 = Point3D(Transform3D(Vector3(1, 1, 1)), "1")
+        p2 = Point3D(Transform3D(Vector3(-1, 1, 1)), "2")
+        p3 = Point3D(Transform3D(Vector3(1, -1, 1)), "3")
+        p4 = Point3D(Transform3D(Vector3(-1, -1, 1)), "4")
+        p5 = Point3D(Transform3D(Vector3(1, 1, -1)), "5")
+        p6 = Point3D(Transform3D(Vector3(-1, 1, -1)), "6")
+        p7 = Point3D(Transform3D(Vector3(1, -1, -1)), "7")
+        p8 = Point3D(Transform3D(Vector3(-1, -1, -1)), "8")
+        
+        points = [
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+            p6,
+            p7,
+            p8,
+        ]
+        
+        tris = [
+            Triangle3D(p1, p2, p3, "#"),
+            Triangle3D(p2, p3, p4, "#"),
+            Triangle3D(p4, p6, p2, "#"),
+            Triangle3D(p4, p6, p8, "#"),
+            Triangle3D(p5, p6, p8, "#"),
+            Triangle3D(p5, p7, p8, "#"),
+            Triangle3D(p1, p5, p7, "#"),
+            Triangle3D(p1, p3, p7, "#"),
+            Triangle3D(p3, p4, p8, "#"),
+            Triangle3D(p3, p7, p8, "#"),
+            Triangle3D(p1, p2, p6, "#"),
+            Triangle3D(p1, p5, p6, "#"),
+        ]
+        
+        lines = [
+            tris[0].l_ab, tris[0].l_bc, tris[0].l_ca,
+            tris[1].l_ab, tris[1].l_bc, tris[1].l_ca,
+            tris[2].l_ab, tris[2].l_bc, tris[2].l_ca,
+            tris[3].l_ab, tris[3].l_bc, tris[3].l_ca,
+            tris[4].l_ab, tris[4].l_bc, tris[4].l_ca,
+            tris[5].l_ab, tris[5].l_bc, tris[5].l_ca,
+            tris[6].l_ab, tris[6].l_bc, tris[6].l_ca,
+            tris[7].l_ab, tris[7].l_bc, tris[7].l_ca,
+            tris[8].l_ab, tris[8].l_bc, tris[8].l_ca,
+            tris[9].l_ab, tris[9].l_bc, tris[9].l_ca,
+            tris[10].l_ab, tris[10].l_bc, tris[10].l_ca,
+            tris[11].l_ab, tris[11].l_bc, tris[11].l_ca,
+        ]
+        
+        
+        return Mesh(Transform3D(), points + lines + tris, check_primary_lists=False)
+        
+    def sphere():
+        pass
+    
+    #---Initialization---
+    def __init__(self, transform = Transform3D.zero(), primaries = [], fill = "#", check_primary_lists = True) -> None:
+        self.transform = transform
+        self.fill = fill
+        for primary in primaries:
+            if type(primary).__bases__[0] == Primary3D:
+                if type(primary) == Point3D: # If point
+                    self.points.append(primary)
+                    primary.transform = Transform3D(primary.transform.globalPosition(), primary.transform.globalRotation(), primary.transform.localScale, primary, self.transform, True, True)
+                    
+                elif type(primary) == Line3D: #If line
+                    self.lines.append(primary)
+                    
+                    if check_primary_lists:
+                        #Check if points has all line points
+                        if not (primary.a in self.points) and primary.a != None:
+                            self.points.append(primary.a)
+                            primary.a.transform = Transform3D(primary.a.transform.globalPosition(), primary.a.transform.globalRotation(), primary.a.transform.localScale, primary.a, self.transform, True, True)
+                        if not (primary.b in self.points) and primary.b != None: 
+                            self.points.append(primary.b)
+                            primary.b.transform = Transform3D(primary.b.transform.globalPosition(), primary.b.transform.globalRotation(), primary.b.transform.localScale, primary.b, self.transform, True, True)
+                elif type(primary) == Triangle3D: #If triangle
+                    self.tris.append(primary)
+                    
+                    if check_primary_lists:
+                        #Check if points has all triangle points
+                        if not (primary.l_ab in self.lines) and primary.l_ab != None:
+                            self.lines.append(primary.l_ab)
+                        if not (primary.l_bc in self.lines) and primary.l_bc != None: 
+                            self.lines.append(primary.l_bc)
+                        if not (primary.l_ca in self.lines) and primary.l_ca != None: 
+                            self.lines.append(primary.l_ca)
+                        
+                        #Check if lines has all triangle lines
+                        if not (primary.a in self.points) and primary.a != None:
+                            self.points.append(primary.a)
+                            primary.a.transform = Transform3D(primary.a.transform.globalPosition(), primary.a.transform.globalRotation(), primary.a.transform.localScale, primary.a, self.transform, True, True)
+                        if not (primary.b in self.points) and primary.b != None: 
+                            self.points.append(primary.b)
+                            primary.b.transform = Transform3D(primary.b.transform.globalPosition(), primary.b.transform.globalRotation(), primary.b.transform.localScale, primary.b, self.transform, True, True)
+                        if not (primary.c in self.points) and primary.c != None: 
+                            self.points.append(primary.c)
+                            primary.c.transform = Transform3D(primary.c.transform.globalPosition(), primary.c.transform.globalRotation(), primary.c.transform.localScale, primary.c, self.transform, True, True)
 
 #Basic camera to hold FOV and Grid variables
 class Camera(Primary3D):
@@ -57,8 +170,8 @@ class Camera(Primary3D):
         unitVec = Vector2(math.cos(fovRad), math.sin(fovRad))
         self.fovAt1 = unitVec.y / unitVec.x
 
-        if self.fovAt1 > 0.99: #Round the fov to 1 if its close enough
-            self.fovAt1 = 1
+        # Round fov at one
+        self.fovAt1 = round(self.fovAt1 * 10 ** 10) / 10 ** 10
 
         #Setup transform
         transform.primary = self
@@ -197,7 +310,7 @@ class Triangle3D(Primary3D):
     # Lines
     l_ab = None
     l_bc = None
-    l_cd = None
+    l_ca = None
 
     #Plotting
     def Plot (self, camera: Camera, wireframe = False):
@@ -221,7 +334,7 @@ class Triangle3D(Primary3D):
         # Setting lines
         self.l_ab = Line3D(pointA, pointB, fill)
         self.l_bc = Line3D(pointB, pointC, fill)
-        self.l_cd = Line3D(pointC, pointA, fill)
+        self.l_ca = Line3D(pointC, pointA, fill)
 
         if fill == "#$#":
             fill = pointA.fill
@@ -242,4 +355,4 @@ a = Point3D(Transform3D(Vector3(0, 0, 10)))
 a.Plot(camera)
 camera.grid.FlipH()
 camera.grid.FlipV()
-print(camera.grid)
+# print(camera.grid)

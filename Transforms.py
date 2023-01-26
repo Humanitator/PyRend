@@ -163,6 +163,10 @@ class Transform2D:
         #---Other---
     def __str__(self) -> str:
         return f"({self.localPosition}; {self.forward()})"
+    
+    #---Presets---
+    def zero():
+        return Transform3D()
 
     #---Initialization---
     def __init__(self, position = Vector2.zero(), rotationDegrees = 0.0, localScale = Vector2.one(), primary = None, parent = None) -> None:
@@ -191,7 +195,7 @@ class Transform3D:
     #-----------------Exclusive math----------------------
 
     #The global position of the transform
-    def globalPosition(self, MaxIterations = 5000, ignoreTimeout = False, gPos = Vector3.zero(), iteration = 0, start = None) -> Vector2:
+    def globalPosition(self, MaxIterations = 5000, ignoreTimeout = False, gPos = Vector3.zero(), iteration = 0, start = None) -> Vector3:
         if type(start) != Transform3D:
             start = self
 
@@ -216,7 +220,7 @@ class Transform3D:
         parent = self.parent
         iteration = 0
         while True:
-            if parent == None:
+            if type(parent) == type(None):
                 return gRot
 
             gRot += parent.localRotation
@@ -270,7 +274,6 @@ class Transform3D:
             # Well this was easy...
             rightTransform = Transform3D(Vector3.zero(), RMatrix3(self.localRotation.x, self.localRotation.y, self.localRotation.z + 90))
             return rightTransform.up()
-            
 
 
     #---------Specials------------
@@ -366,6 +369,11 @@ class Transform3D:
         #---Other---
     def __str__(self) -> str:
         return f"({self.localPosition}; {self.localRotation})"
+    
+    
+    #---Presets---
+    def zero():
+        return Transform3D()
 
     #---Initialization---
     def __init__(self, position = Vector3.zero(), rotation = RMatrix3.front(), scale = Vector3.one(), primary = None, parent = None, pos_is_global = False, rot_is_global = False) -> None:
@@ -381,16 +389,16 @@ class Transform3D:
         if type(parent) == Transform3D:
             self.parent = parent
         elif parent != None:
-            self.parent = parent.transform
+            self.parent = parent
         else:
             self.parent = parent
 
         # Set position and rotation
         if pos_is_global and type(parent) != type(None):
-            self.localPosition = parent.transform.globalPosition().vectorTo(position)
-            print(parent.transform.globalPosition().vectorTo(position), "; ", position, "; ", parent.transform)
+            self.localPosition = parent.globalPosition().vectorTo(position)
+            # print(parent.transform.globalPosition().vectorTo(position), "; ", position, "; ", parent.transform)
         if rot_is_global and type(parent) != type(None):
-            self.localRotation = rotation.local(parent.transform.globalRotation())
+            self.localRotation = rotation.local(parent.globalRotation())
 
 #Some test code
 
