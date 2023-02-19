@@ -1,13 +1,11 @@
 from Object3DClasses import *
 from MainClasses import *
 
-# g = Grid(100, round(100/16*9))
-# c = Camera(Transform3D(), g, 90)
+g = Grid(50, round(50/16*9))
+c = Camera(Transform3D(), g, 90)
 
-# cube = Mesh.cube()
+p = Point3D(Transform3D(Vector3(0, 0, -1)))
 
-# c.renderObjects(cube.tris)
-# print(c.grid)
+p.Plot(c)
 
-if None:
-    print("lol")
+print(g, p.ConvertTo2D(c))

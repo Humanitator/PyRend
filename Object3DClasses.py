@@ -127,6 +127,7 @@ class Camera(Primary3D):
     fov = None
     fovAt1 = None #Fov horizontal size from center at 1ut from camera
     grid = None
+    minDist = 0.001
 
     # Sort objects by distance from camera from farthest to closest
     def sortObjByDist(self, objects: list, uselocalPos = False) -> list:
@@ -150,13 +151,13 @@ class Camera(Primary3D):
     # Render the whole scene
     def renderObjects(self, objects = [], wireframe = False):
         if wireframe:
-            for object in objects:
-                if type(object).__bases__[0] == Primary3D:
-                    object.Plot(self, True) # plot object on cameras grid
+            for obj in objects:
+                if type(obj).__bases__[0] == Primary3D:
+                    obj.Plot(self, True) # plot object on cameras grid
         else:
-            for object in objects:
-                if type(object).__bases__[0] == Primary3D:
-                    object.Plot(self, False) # plot object on cameras grid
+            for obj in objects:
+                if type(obj).__bases__[0] == Primary3D:
+                    obj.Plot(self, False) # plot object on cameras grid
 
 
     #Initialization
@@ -189,9 +190,15 @@ class Point3D(Primary3D):
         verticalFovAt1 = camera.fovAt1 * camYX_ratio
 
         # Get basic variables
-        cp_vec = camera.transform.globalPosition().vectorTo(self.transform.globalPosition()) #Vector from camera to point
-        cpF_Dist = cp_vec.dot(camera.transform.forward()) #Camera forward distance to closest coordinate to point
-        screenCenterAtP = camera.transform.globalPosition() + camera.transform.forward() * cpF_Dist # Get the screen center coordinates at point
+        
+        # Vector from camera to point
+        cp_vec = camera.transform.globalPosition().vectorTo(self.transform.globalPosition())
+        
+        # Camera forward vector distance to closest coordinate to point
+        cpF_Dist = cp_vec.dot(camera.transform.forward())
+        
+        # Get the screen center coordinates at point
+        screenCenterAtP = camera.transform.globalPosition() + camera.transform.forward() * cpF_Dist
 
         screenSizeX_atP = camera.fovAt1 * cpF_Dist #Screen Y size from center at point distance
         screenSizeY_atP = verticalFovAt1 * cpF_Dist #Screen Y size from center at point distance
@@ -212,7 +219,7 @@ class Point3D(Primary3D):
         pointGridPos = Vector2(pointGridX, pointGridY)
         # print(pointGridPos)
 
-        return Point2D(Transform2D(pointGridPos), fill=self.fill)
+        return Point2D(Transform2D(pointGridPos), fill=self.fill), cpF_Dist
 
         
         # --Old conversion code--
@@ -238,8 +245,9 @@ class Point3D(Primary3D):
 
     #Plotting the point on a grid
     def Plot(self, camera: Camera, wireframe = False):
-        p2D = self.ConvertTo2D(camera)
-        camera.grid.Plot(p2D.transform.globalPosition(), self.fill)
+        p2D, zDist = self.ConvertTo2D(camera)
+        if zDist >= camera.minDist:
+            camera.grid.Plot(p2D.transform.globalPosition(), self.fill)
 
     #Initialization
     def __init__(self, transform = Transform3D(), fill = "#") -> None:
@@ -269,8 +277,9 @@ class Line3D(Primary3D):
     def Plot (self, camera: Camera, wireframe = False):
         twoD_a = self.a.ConvertTo2D(camera)
         twoD_b = self.b.ConvertTo2D(camera)
-        lineTwoD = Line2D(twoD_a, twoD_b, self.fill)
-        lineTwoD.Plot(camera.grid, True)
+        if zDist_a >= camera.minDist and zDist_b >= camera.minDist:
+            lineTwoD = Line2D(twoD_a, twoD_b, self.fill)
+            lineTwoD.Plot(camera.grid, True)
 
     #Initialization
     def __init__(self, pointA: Point3D, pointB: Point3D, fill = "#$#") -> None:
@@ -317,6 +326,7 @@ class Triangle3D(Primary3D):
         twoD_a = self.a.ConvertTo2D(camera)
         twoD_b = self.b.ConvertTo2D(camera)
         twoD_c = self.c.ConvertTo2D(camera)
+        
         tri2D = Triangle2D(twoD_a, twoD_b, twoD_c, self.fill)
 
         if wireframe:
