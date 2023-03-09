@@ -275,8 +275,8 @@ class Line3D(Primary3D):
 
     # Plot the line to a grid
     def Plot (self, camera: Camera, wireframe = False):
-        twoD_a = self.a.ConvertTo2D(camera)
-        twoD_b = self.b.ConvertTo2D(camera)
+        twoD_a, zDist_a = self.a.ConvertTo2D(camera)
+        twoD_b, zDist_b = self.b.ConvertTo2D(camera)
         if zDist_a >= camera.minDist and zDist_b >= camera.minDist:
             lineTwoD = Line2D(twoD_a, twoD_b, self.fill)
             lineTwoD.Plot(camera.grid, True)
@@ -323,16 +323,18 @@ class Triangle3D(Primary3D):
 
     #Plotting
     def Plot (self, camera: Camera, wireframe = False):
-        twoD_a = self.a.ConvertTo2D(camera)
-        twoD_b = self.b.ConvertTo2D(camera)
-        twoD_c = self.c.ConvertTo2D(camera)
+        twoD_a, zDist_a = self.a.ConvertTo2D(camera)
+        twoD_b, zDist_b = self.b.ConvertTo2D(camera)
+        twoD_c, zDist_c = self.c.ConvertTo2D(camera)
         
-        tri2D = Triangle2D(twoD_a, twoD_b, twoD_c, self.fill)
+        # Check if a, b and c are not behind the camera
+        if zDist_a >= camera.minDist and zDist_b >= camera.minDist and zDist_c >= camera.minDist:
+            tri2D = Triangle2D(twoD_a, twoD_b, twoD_c, self.fill)
 
-        if wireframe:
-            tri2D.Plot(camera.grid, True)
-        else:
-            tri2D.Plot(camera.grid)
+            if wireframe:
+                tri2D.Plot(camera.grid, True)
+            else:
+                tri2D.Plot(camera.grid)
 
     #Initialization
     def __init__(self, pointA: Point3D, pointB: Point3D, pointC: Point3D, fill = "#$#") -> None:

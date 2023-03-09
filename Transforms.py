@@ -196,7 +196,7 @@ class Transform3D:
 
     #The global position of the transform
     def globalPosition(self, MaxIterations = 5000, ignoreTimeout = False, gPos = Vector3.zero(), iteration = 0, start = None) -> Vector3:
-        if type(start) != Transform3D:
+        if start is not None:
             start = self
 
         # Check if too many recursions
@@ -205,7 +205,7 @@ class Transform3D:
             if iteration > MaxIterations:
                 sys.exit(f"Iteration limit reached! Too many iterations when getting global position for {start.primary} ({start}). Maybe a loop in parents...")
 
-        if type(self.parent) == type(None): # return start position if world is parent
+        if self.parent is None: # return start position if world is parent
             return self.localPosition
         else: # Recurse
             gPos += self.parent.globalPosition(MaxIterations, ignoreTimeout, gPos, iteration, start) + (self.parent.right() * self.localPosition.x +                            # Add relative global x position
@@ -388,8 +388,8 @@ class Transform3D:
         # Set parent
         if type(parent) == Transform3D:
             self.parent = parent
-        elif parent != None:
-            self.parent = parent
+        elif parent:
+            self.parent = parent.transform
         else:
             self.parent = parent
 
