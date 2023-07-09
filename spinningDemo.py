@@ -40,6 +40,7 @@ points = [
     pOrigin,
 ]
 
+
 tris = [
     Triangle3D(p1, p2, p3, "■"),
     Triangle3D(p2, p3, p4, "■"),
@@ -138,6 +139,8 @@ def main(stdscr):
         # pOrigin.transform.localPosition.y = math.sin(t) * 2
         c.grid.Clear()
         c.renderObjects(lines, True)
+        
+        #  Flip grid
         c.grid.FlipH()
         c.grid.FlipV()
         

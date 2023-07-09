@@ -19,8 +19,17 @@ class Mesh:
     lines = []
     tris = []
     
+    # Plot mesh
+    def Render(self, camera, render_type:int = 2, wireframe:bool = False):
+        if render_type == 0:
+            camera.renderObjects(self.points, wireframe)
+        elif render_type == 1:
+            camera.renderObjects(self.lines, wireframe)
+        elif render_type == 2:
+            camera.renderObjects(self.tris, wireframe)
+    
     #---Presets---
-    def cube():
+    def cube(position = Vector3.zero(), rotation = RMatrix3.zero(), scale = Vector3.zero(), parent = None):
         p1 = Point3D(Transform3D(Vector3(1, 1, 1)), "1")
         p2 = Point3D(Transform3D(Vector3(-1, 1, 1)), "2")
         p3 = Point3D(Transform3D(Vector3(1, -1, 1)), "3")
@@ -72,7 +81,7 @@ class Mesh:
         ]
         
         
-        return Mesh(Transform3D(), points + lines + tris, check_primary_lists=False)
+        return Mesh(Transform3D(position, rotation, scale, parent=parent), points + lines + tris, check_primary_lists=False)
         
     def sphere():
         pass
@@ -125,19 +134,19 @@ class Mesh:
 class Camera(Primary3D):
     #Basic variables
     fov = None
-    fovAt1 = None #Fov horizontal size from center at 1ut from camera
+    fovAt1 = None # Fov horizontal size from center at 1ut from camera
     grid = None
     minDist = 0.001
 
     # Sort objects by distance from camera from farthest to closest
-    def sortObjByDist(self, objects: list, uselocalPos = False) -> list:
+    def sortObjByDist(self, objects: list, useLocalPos = False) -> list:
         arr = objects.copy()
         sortedArr = [arr[0]]
         arr.pop(0)
         for obj in arr:
             if type(obj).__bases__[0] == Primary3D:
                 for i in range(len(arr)):
-                    if uselocalPos:
+                    if useLocalPos:
                         if abs(sortedArr[i].transform.localPosition) <= abs(obj.transform.localPosition):
                             sortedArr.insert(i, obj)
                             break
@@ -185,7 +194,7 @@ class Point3D(Primary3D):
 
     #Calculate point coordinates from 3D space to 2D space
     def ConvertTo2D(self, camera: Camera) -> Point2D:
-        #Calculate camera's vertical FOV
+        # Calculate camera's vertical FOV
         camYX_ratio = camera.grid.ySize / camera.grid.xSize
         verticalFovAt1 = camera.fovAt1 * camYX_ratio
 
@@ -281,21 +290,21 @@ class Line3D(Primary3D):
             lineTwoD = Line2D(twoD_a, twoD_b, self.fill)
             lineTwoD.Plot(camera.grid, True)
 
-    #Initialization
+    # Initialization
     def __init__(self, pointA: Point3D, pointB: Point3D, fill = "#$#") -> None:
-        #Set a and b points
+        # Set a and b points
         self.a = pointA
         self.b = pointB
 
-        #Set geometry variables
+        # Set geometry variables
         pA_pB_Vec = pointA.transform.globalPosition().vectorTo(pointB.transform.globalPosition()) #Direction vector from a to b
 
-            #Set multipliers
+            # Set multipliers
         self.m_X = pA_pB_Vec.x
         self.m_Y = pA_pB_Vec.y
         self.m_Z = pA_pB_Vec.z
 
-            #Set offsets
+            # Set offsets
         self.b_X = 2 * pointA.transform.globalPosition().x
         self.b_Y = -(2 * pointA.transform.globalPosition().y)
         self.b_Z = pointA.transform.globalPosition().z

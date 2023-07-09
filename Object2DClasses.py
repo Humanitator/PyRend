@@ -4,6 +4,8 @@
 from VectorMath import Vector2
 from MainClasses import Grid, Primary2D
 from Transforms import Transform2D
+import math
+from mathExt import div, mul, sum, sub
 
 
 #A basic 2D point
@@ -26,31 +28,49 @@ class Line2D(Primary2D):
     b = None
 
     #Geometry
-    m_X = None #Multiplier for X
-    m_Y = None #Multiplier for Y
+    m_X = 1 # Multiplier for X
+    # m_Y = 1 # Multiplier for Y
 
-    b_Y = None #Offset for Y
+    b_X = 0 # Offset for X
+    # b_Y = 0 # Offset for Y
 
     # Get a coordinate by passing the opposite coordinate
     def GetCoord(self, oppCoord: float, isX = True, raw = False) -> float:
-        coord = None #The wanted coordiante
+        coord = None # The wanted coordiante
 
-        if isX: #If the passed coordinate is a x coordinate
-            if (self.m_X == 0): #If x multiplier is 0
-                coord = -self.b_Y
+        if isX: # If the passed coordinate is a x coordinate
+            if self.m_X == 0:
+                coord = self.b_X
+            elif abs(self.m_X == float("INF")):
+                if oppCoord == self.b_X:
+                    coord = float("-INF")
+                else:
+                    coord = float("INF")
             else:
-                coord = (self.m_X * oppCoord - self.b_Y) / self.m_Y
-        else: #If the passed coordinate is a y coordinate
-            if (self.m_Y == 0): #If y multiplier is 0
-                coord = self.b_Y
+                coord = self.m_X * oppCoord + self.b_X
+        else: # If the passed coordinate is a y coordinate
+            if self.m_X == 0:
+                if oppCoord == self.b_X:
+                    coord = float("-INF")
+                else:
+                    coord = float("INF")
+            elif self.m_X == float("INF"):
+                coord = self.b_X
             else:
-                coord = (self.m_Y * oppCoord + self.b_Y) / self.m_X
-        coord = round(coord) #Round the coordinate
+                coord = (oppCoord - self.b_X) / self.m_X
+        # Round?
+        # if not raw:
+        #     if abs(coord) != float(" inf "):
+        coord = round(coord) # Round the coordinate
+                    
         return coord
 
     # Check if the line is steep (>45 degrees)
     def isSteep(self):
-        return abs(self.m_X) >= abs(self.m_Y)
+        '''
+            Check if the line is steep (>45 degrees)
+        '''
+        return abs(self.m_X) > 1
 
     # Get all plottable positions
     def GetPlotXYPosDict (self) -> dict:
@@ -90,7 +110,7 @@ class Line2D(Primary2D):
         return posXDict
         
 
-        #------Rasterization---------
+        #------ Rasterization ---------
     #Plot the line on a grid
     def Plot(self, grid: Grid, bounded = True) -> Grid:
         #Get global positions of points
@@ -105,23 +125,43 @@ class Line2D(Primary2D):
         if self.isSteep():
             mxY = max(a_gPos.y, b_gPos.y) #Point in line with highest y
             loY = min(a_gPos.y, b_gPos.y) #Point in line with lowest y
-
-            if not bounded:
-                for y in range(grid.ySize):
-                    grid.Plot(Vector2(self.GetCoord(y, False), y), self.fill) #Plot coordinate
-            else:
-                for y in range(loY, mxY+1):
-                    grid.Plot(Vector2(self.GetCoord(y, False), y), self.fill) #Plot coordinate
+            plot_range =  range(loY, mxY+1) if bounded else range(grid.ySize) # Plot range for line
+            
+            for y in plot_range:
+                # Get x coordinate
+                xCoord = self.GetCoord(y, False)
+                
+                # If coord is at infinity
+                if xCoord == float("INF"):
+                    continue
+                
+                # Plot
+                if xCoord == float("-INF"): # If coordinate is a horizontal line
+                    for x in (range(min(a_gPos.x, b_gPos.x), max(a_gPos.x, b_gPos.x)+1) if bounded else grid.xSize): # Plot all coordinates in the line
+                        grid.Plot(Vector2(x, y), self.fill)
+                    break
+                else: # Standard plot
+                    grid.Plot(Vector2(xCoord, y), self.fill) #Plot coordinate
         else:
             mxX = max(a_gPos.x, b_gPos.x) #Point in line with highest x
             loX = min(a_gPos.x, b_gPos.x) #Point in line with lowest x
+            plot_range =  range(loX, mxX+1) if bounded else range(grid.xSize) # Plot range for line
 
-            if not bounded:
-                for x in range(grid.xSize):
-                    grid.Plot(Vector2(x, self.GetCoord(x)), self.fill) #Plot coordinate
-            else:
-                for x in range(loX, mxX+1):
-                    grid.Plot(Vector2(x, self.GetCoord(x)), self.fill) #Plot coordinate
+            for x in plot_range:
+                # Get x coordinate
+                yCoord = self.GetCoord(x, True)
+                
+                # If coord is at infinity
+                if yCoord == float("INF"):
+                    continue
+                
+                # Plot
+                if yCoord == float("-INF"): # If coordinate is a horizontal line
+                    for y in (range(min(a_gPos.y, b_gPos.y), max(a_gPos.y, b_gPos.y)+1) if bounded else grid.ySize): # Plot all coordinates in the line
+                        grid.Plot(Vector2(x, y), self.fill)
+                    break
+                else: # Standard plot
+                    grid.Plot(Vector2(x, yCoord), self.fill) #Plot coordinate
         return grid
 
     #Stringifies
@@ -137,23 +177,15 @@ class Line2D(Primary2D):
         #Geometry
         pA_pB_Vec = pointA.transform.globalPosition().vectorTo(pointB.transform.globalPosition())
 
-            #Multipliers
-        self.m_X = pA_pB_Vec.y
-        self.m_Y = pA_pB_Vec.x
-
-            #Offsets
-        b_Y = -(pointA.transform.globalPosition().y * self.m_Y)
-        b_X = -(pointA.transform.globalPosition().x * self.m_X)
-        self.b_Y = b_Y - b_X
-
-        #If both points are in the same place, set offset to a big number, so that the line cant ever be used
-        if self.m_X == 0 and self.m_Y == 0:
-            self.m_Y = 1
-            self.b_Y = 10 ** 1000
-        elif self.m_X == 0: #If the x multiplier is 0 (line is horizontal), divide offset by y multiplier
-            self.b_Y /= self.m_Y
-        elif self.m_Y == 0: #If the y multiplier is 0 (line is vertical), divide offset by x multiplier
-            self.b_Y /= self.m_X
+            # Multipliers
+        if pointA.transform.globalPosition().x == pointB.transform.globalPosition().x: # If line is vertical
+            self.m_X = float("INF")
+            self.b_X = pointA.transform.globalPosition().x
+        else:
+            self.m_X = pA_pB_Vec.y / pA_pB_Vec.x
+            # Offset
+            self.b_X = self.m_X * -pointA.transform.globalPosition().x + pointA.transform.globalPosition().y
+        # print(pointA.transform.globalPosition().x, self.m_X, pointA.transform.globalPosition().y)
 
         #Default fill
         if fill == "#$#":
@@ -214,28 +246,53 @@ class Triangle2D(Primary2D):
 
             # print(lLeft.a.transform.globalPosition(), lLeft.b.transform.globalPosition())
 
-            #-----------New-----------------
+            # ------------- Newest ----------------
             for x in range(grid.xSize):
-                if x >= xLeft and x < xMid: #Fill left side
-                    llYs = leftXY_Dict[x]
-                    lbYs = baseXY_Dict[x]
-                    Ys = llYs + lbYs
-                    mxY = max(Ys)
-                    loY = min(Ys)
-                    yRange = range(loY, mxY+1)
-
-                    for y in yRange:
+                for y in range(grid.ySize):
+                    if y >= lBase.GetCoord(x, True): # Check if point is above base
+                        # Check if point is between side lines
+                        if lLeft.m_X > 0: # If line is ascending
+                            if not (y <= lLeft.GetCoord(x, True)): # If point ISN'T outside triangle 
+                                continue
+                        else:
+                            if not (y >= x * lLeft.GetCoord(x, True)): # If point ISN'T outside triangle 
+                                continue
+                        
+                        if lRight.m_X > 0: # If right line is ascending
+                            if not (y >= lRight.GetCoord(x, True)): # If point ISN'T outside triangle 
+                                continue
+                        else:
+                            if not (y <= lRight.GetCoord(x, True)): # If point ISN'T outside triangle 
+                                continue
+                        
+                        # Plot
                         grid.Plot(Vector2(x, y), self.fill)
-                elif x >= xMid and x <= xRight: #Fill right side
-                    lrYs = rightXY_Dict[x]
-                    lbYs = baseXY_Dict[x]
-                    Ys = lrYs + lbYs
-                    mxY = max(Ys)
-                    loY = min(Ys)
-                    yRange = range(loY, mxY+1)
+                            
+                            
+                        
 
-                    for y in yRange:
-                        grid.Plot(Vector2(x, y), self.fill)
+            #-----------New, but Old-----------------
+            # for x in range(grid.xSize):
+            #     if x >= xLeft and x < xMid: #Fill left side
+            #         llYs = leftXY_Dict[x]
+            #         lbYs = baseXY_Dict[x]
+            #         Ys = llYs + lbYs
+            #         mxY = max(Ys)
+            #         loY = min(Ys)
+            #         yRange = range(loY, mxY+1)
+
+            #         for y in yRange:
+            #             grid.Plot(Vector2(x, y), self.fill)
+            #     elif x >= xMid and x <= xRight: #Fill right side
+            #         lrYs = rightXY_Dict[x]
+            #         lbYs = baseXY_Dict[x]
+            #         Ys = lrYs + lbYs
+            #         mxY = max(Ys)
+            #         loY = min(Ys)
+            #         yRange = range(loY, mxY+1)
+
+            #         for y in yRange:
+            #             grid.Plot(Vector2(x, y), self.fill)
 
             #-----------Old-----------------
             # #Fill triangle
@@ -281,16 +338,32 @@ class Triangle2D(Primary2D):
     
 
 #----------------------------Some test code------------------
-g = Grid(10, 10, "#", ".")
 
-p0 = Point2D(Transform2D(Vector2(0, 0)))
-p1 = Point2D(Transform2D(Vector2(2, 2)))
-p2 = Point2D(Transform2D(Vector2(4, 5)))
+def round(num):
+    if abs(num) != float(" inf "):
+        if num - math.floor(num) < 0.5:
+            return math.floor(num)
+        else:
+            return math.ceil(num)
+    return num
+            
+if __name__ == "__main__":
+    g = Grid(10, 10, "#", ".")
 
-l1 = Line2D(p2, p1)
+    p0 = Point2D(Transform2D(Vector2(7, 1)), "0")
+    p1 = Point2D(Transform2D(Vector2(2, 2)), "1")
+    p2 = Point2D(Transform2D(Vector2(7, 7)), "2")
 
-l1.Plot(g)
-# p0.Plot(g)
+    l1 = Line2D(p1, p2, "#")
 
-g.FlipV()
-# print(g)
+    t1 = Triangle2D(p0, p1, p2, "#")
+
+    t1.Plot(g)
+    # l1.Plot(g)
+
+    p0.Plot(g)
+    p1.Plot(g)
+    p2.Plot(g)
+
+    g.FlipV()
+    print(g)
